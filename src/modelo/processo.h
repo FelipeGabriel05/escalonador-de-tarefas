@@ -6,6 +6,10 @@ typedef struct {
     int criacao;
     int duracao;
     int prioridade;
+
+    int restante;
+    int inicio;
+    int fim;
 } Processo;
 
 #endif

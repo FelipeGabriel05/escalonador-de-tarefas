@@ -44,7 +44,10 @@ Processo *ler_processos(const char *nome_arquivo, int *quantidade) {
         processos[qtd].id = qtd + 1;
         processos[qtd].criacao = criacao;
         processos[qtd].duracao = duracao;
+        processos[qtd].restante = duracao;
         processos[qtd].prioridade = prioridade;
+        processos[qtd].inicio = -1;
+        processos[qtd].fim = -1;
     
         qtd++;
     }

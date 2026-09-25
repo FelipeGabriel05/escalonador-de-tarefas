@@ -133,7 +133,7 @@ Resultado executar_fcfs(Processo *processos, int quantidade) {
     tempo_total += 1;
     resultado.execucao = malloc(tempo_total * sizeof(int));
 
-    
+
     if (resultado.execucao == NULL) {
         free(copia);
         return resultado;
@@ -279,7 +279,6 @@ Resultado executar_fcfs(Processo *processos, int quantidade) {
     int soma_resposta = 0;
 
 
-    //Calculamos as métricas individualmente para cada processo.
     for (int i = 0; i < quantidade; i++) {
         // Turnaround = tempo de término - tempo de criação
         int turnaround = copia[i].fim - copia[i].criacao;

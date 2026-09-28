@@ -74,24 +74,69 @@ void mostrar_resultado(
 
         for (int i = 0; i < quantidade; i++) {
 
+            int id = processos[i].id;
+
             /*
-                Se o processo executou neste segundo,
-                mostramos ##.
+                Descobre o último instante em que
+                esse processo executou.
             */
-            if (resultado.execucao[tempo] == processos[i].id) {
+            int ultimo_tempo = -1;
+
+            for (int t = 0; t < resultado.tamanho_execucao; t++) {
+
+                if (resultado.execucao[t] == id) {
+                    ultimo_tempo = t;
+                }
+            }
+
+            /*
+                Momento em que o processo termina.
+
+                Se o último segundo em que executou foi 4,
+                então ele terminou no instante 5.
+            */
+            int fim = ultimo_tempo + 1;
+
+
+            /*
+                Antes do processo ser criado,
+                ele ainda não aparece no diagrama.
+            */
+            if (tempo < processos[i].criacao) {
+
+                printf("    ");
+            }
+
+            /*
+                Depois que o processo terminou,
+                também não precisamos mais mostrar nada.
+            */
+            else if (tempo >= fim) {
+
+                printf("    ");
+            }
+
+            /*
+                Se o processo está sendo executado
+                neste segundo, mostramos ##.
+            */
+            else if (resultado.execucao[tempo] == id) {
+
                 printf("   ##");
             }
 
             /*
-                Caso contrário, mostramos --.
+                O processo já chegou, ainda não terminou,
+                mas está esperando pela CPU.
             */
             else {
+
                 printf("   --");
             }
         }
-
         printf("\n");
     }
+
     free(resultado.execucao);
 }
 

@@ -1,69 +1,93 @@
 #include "fcfs.h"
 #include <stdlib.h>
 
-/*
-    Escolhe qual processo deverá receber a CPU.
-    No FCFS (First Come, First Served), o processo escolhido
-    é aquele que chegou primeiro.
-    Caso dois processos tenham o mesmo instante de criação,
-    usamos o menor ID como critério de desempate.
-    A função retorna o índice do processo escolhido no vetor.
-    Caso nenhum processo esteja disponível naquele momento,
-    retorna -1.
- */
+
+static int desempate(
+    Processo *processos,
+    int quantidade,
+    int escolhido,
+    int candidato
+) {
+
+    /*
+     * Menor tempo restante.
+     */
+    if (processos[candidato].restante <
+        processos[escolhido].restante) {
+
+        return candidato;
+    }
+
+    /*
+     * Se também houver empate no tempo restante,
+     * escolha aleatória.
+     */
+    if (processos[candidato].restante ==
+        processos[escolhido].restante) {
+
+        if (rand() % 2 == 0) {
+            return candidato;
+        }
+    }
+
+    return escolhido;
+}
+
 
 static int escolher_processo(Processo *processos, int quantidade, int tempo) {
 
     int escolhido = -1;
 
-    /* 
-        Percorremos todos os processos procurando aqueles
-        que já podem executar.
-    */
-
     for (int i = 0; i < quantidade; i++) {
 
         /*
-            Se o tempo restante é 0, significa que o processo já terminou 
-            e não pode ser escolhido novamente.
-        */
+         * Processo já terminou.
+         */
         if (processos[i].restante <= 0) {
             continue;
         }
 
         /*
-            Se o processo ainda não chegou, ele não está
-            disponível para utilizar a CPU.
-        */
+         * Processo ainda não chegou.
+         */
         if (processos[i].criacao > tempo) {
             continue;
         }
 
         /*
-            Se ainda não escolhemos nenhum processo,
-            o primeiro processo disponível passa a ser
-            o candidato.
-        */
+         * Primeiro processo disponível.
+         */
         if (escolhido == -1) {
             escolhido = i;
             continue;
         }
 
         /*
-            Primeiro critério: No FCFS, quem chegou primeiro deve executar primeiro.
-        */
-        if (processos[i].criacao < processos[escolhido].criacao) {
+         * Critério principal do FCFS:
+         * processo que chegou primeiro.
+         */
+        if (
+            processos[i].criacao < processos[escolhido].criacao
+        ) {
             escolhido = i;
-        } else if (
-            processos[i].criacao == processos[escolhido].criacao &&
-            processos[i].id < processos[escolhido].id
-        ) 
-        {
-            /*
-                Segundo critério: Se os dois chegaram no mesmo instante, 
-                escolhemos o processo com menor ID.
-            */
-            escolhido = i;
+        }
+
+        /*
+         * Se chegaram no mesmo instante,
+         * aplicamos os critérios de desempate
+         * definidos pelo trabalho.
+         */
+        else if (
+            processos[i].criacao ==
+            processos[escolhido].criacao
+        ) {
+
+            escolhido = desempate(
+                processos,
+                quantidade,
+                escolhido,
+                i
+            );
         }
     }
 

@@ -212,13 +212,11 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
         A cópia evita modificar os processos originais.
     */
-    Processo *copia =
-        malloc(quantidade * sizeof(Processo));
+    Processo *copia = malloc(quantidade * sizeof(Processo));
 
     if (copia == NULL) {
         return resultado;
     }
-
 
     /*
         Copiamos os processos.
@@ -316,15 +314,9 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
                 um segundo.
             */
             if (processo_atual == -1) {
-
-                resultado.execucao[
-                    resultado.tamanho_execucao
-                ] = -1;
-
+                resultado.execucao[resultado.tamanho_execucao] = -1;
                 resultado.tamanho_execucao++;
-
                 tempo++;
-
                 continue;
             }
 
@@ -337,7 +329,6 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
                 o tempo de resposta.
             */
             if (copia[processo_atual].inicio == -1) {
-
                 copia[processo_atual].inicio = tempo;
             }
 
@@ -351,7 +342,6 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
                 processo_anterior != -1 &&
                 processo_anterior != processo_atual
             ) {
-
                 resultado.trocas_contexto++;
             }
         }
@@ -362,10 +352,7 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
             Guardamos seu ID no diagrama.
         */
-        resultado.execucao[
-            resultado.tamanho_execucao
-        ] = copia[processo_atual].id;
-
+        resultado.execucao[resultado.tamanho_execucao] = copia[processo_atual].id;
         resultado.tamanho_execucao++;
 
 
@@ -434,8 +421,7 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
             tempo de término - tempo de criação.
         */
-        int turnaround =
-            copia[i].fim - copia[i].criacao;
+        int turnaround = copia[i].fim - copia[i].criacao;
 
 
         /*
@@ -443,8 +429,7 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
             turnaround - duração.
         */
-        int espera =
-            turnaround - copia[i].duracao;
+        int espera = turnaround - copia[i].duracao;
 
 
         /*
@@ -453,8 +438,7 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
             primeiro instante em que recebeu CPU
             - instante de criação.
         */
-        int resposta =
-            copia[i].inicio - copia[i].criacao;
+        int resposta = copia[i].inicio - copia[i].criacao;
 
 
         soma_turnaround += turnaround;
@@ -463,24 +447,11 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
     }
 
 
-    /*
-        Calculamos as médias.
-    */
-    resultado.tempo_medio_turnaround =
-        (double)soma_turnaround / quantidade;
+    // Calculamos as médias.
+    resultado.tempo_medio_turnaround = (double)soma_turnaround / quantidade;
+    resultado.tempo_medio_espera = (double)soma_espera / quantidade;
+    resultado.tempo_medio_resposta = (double)soma_resposta / quantidade;
 
-    resultado.tempo_medio_espera =
-        (double)soma_espera / quantidade;
-
-    resultado.tempo_medio_resposta =
-        (double)soma_resposta / quantidade;
-
-
-    /*
-        Liberamos a cópia dos processos.
-    */
     free(copia);
-
-
     return resultado;
 }

@@ -35,24 +35,62 @@ Processo *carregar_processos(const char *nome_arquivo, int *quantidade) {
 /*
     Mostra os resultados de um algoritmo.
 */
-void mostrar_resultado(Resultado resultado) {
+void mostrar_resultado(
+    Resultado resultado,
+    Processo *processos,
+    int quantidade
+) {
 
     printf("\nTempo medio de turnaround: %.2f\n", resultado.tempo_medio_turnaround);
     printf("Tempo medio de espera: %.2f\n", resultado.tempo_medio_espera);
     printf("Tempo medio de resposta: %.2f\n", resultado.tempo_medio_resposta);
     printf("Trocas de contexto: %d\n", resultado.trocas_contexto);
 
-    // Mostra o diagrama dos tempos de execução
-    printf("\nDiagrama:\n");
 
-    for (int i = 0; i < resultado.tamanho_execucao; i++) {
+    /*
+        Mostra o diagrama de execução.
 
-        if (resultado.execucao[i] == -1) {
-            printf("Tempo %d: ocioso\n",i);
+        Cada linha representa um segundo da execução.
+        Cada coluna representa um processo.
+    */
+    printf("\nDiagrama:\n\n");
+
+
+    // Cabeçalho da tabela.
+    printf("tempo");
+    for (int i = 0; i < quantidade; i++) {
+        printf("   P%d", processos[i].id);
+    }
+    printf("\n");
+
+
+    /*
+        Percorremos cada segundo da execução.
+    */
+    for (int tempo = 0; tempo < resultado.tamanho_execucao; tempo++) {
+
+        // Mostra o intervalo de execução
+        printf("%d-%-2d", tempo, tempo + 1);
+
+        for (int i = 0; i < quantidade; i++) {
+
+            /*
+                Se o processo executou neste segundo,
+                mostramos ##.
+            */
+            if (resultado.execucao[tempo] == processos[i].id) {
+                printf("   ##");
+            }
+
+            /*
+                Caso contrário, mostramos --.
+            */
+            else {
+                printf("   --");
+            }
         }
-        else {
-            printf("Tempo %d: P%d\n",i,resultado.execucao[i]);
-        }
+
+        printf("\n");
     }
     free(resultado.execucao);
 }
@@ -131,7 +169,7 @@ int main() {
 
     printf("\nQuantum: %d\n", config.quantum);
     printf("Aging: %d\n", config.aging);
-    mostrar_resultado(resultado);
+    mostrar_resultado(resultado, processos, quantidade);
     free(processos);
 
     return 0;

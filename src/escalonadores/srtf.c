@@ -203,8 +203,7 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
         Assim podemos alterar restante, inicio e fim
         sem modificar os processos originais.
     */
-    Processo *copia =
-        malloc(quantidade * sizeof(Processo));
+    Processo *copia = malloc(quantidade * sizeof(Processo));
 
     if (copia == NULL) {
         return resultado;
@@ -239,8 +238,7 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
     /*
         Alocamos memória para o diagrama.
     */
-    resultado.execucao =
-        malloc(tempo_total * sizeof(int));
+    resultado.execucao = malloc(tempo_total * sizeof(int));
 
     if (resultado.execucao == NULL) {
         free(copia);
@@ -421,16 +419,14 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
             Turnaround:
             tempo de término - tempo de criação.
         */
-        int turnaround =
-            copia[i].fim - copia[i].criacao;
+        int turnaround = copia[i].fim - copia[i].criacao;
 
 
         /*
             Tempo de espera:
             turnaround - duração.
         */
-        int espera =
-            turnaround - copia[i].duracao;
+        int espera = turnaround - copia[i].duracao;
 
 
         /*
@@ -438,8 +434,7 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
             primeiro instante em que recebeu CPU
             - instante de criação.
         */
-        int resposta =
-            copia[i].inicio - copia[i].criacao;
+        int resposta = copia[i].inicio - copia[i].criacao;
 
 
         soma_turnaround += turnaround;

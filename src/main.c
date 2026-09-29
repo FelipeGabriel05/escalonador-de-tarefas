@@ -6,6 +6,9 @@
 #include "escalonadores/fcfs.h"
 #include "escalonadores/sjf.h"
 #include "escalonadores/srtf.h"
+#include "escalonadores/prioridade_sem.h"
+#include "escalonadores/prioridade_com.h"
+#include "escalonadores/round_robin.h"
 
 
 Processo *carregar_processos(const char *nome_arquivo, int *quantidade) {
@@ -155,11 +158,15 @@ int main() {
     printf("1 - FCFS\n");
     printf("2 - SJF\n");
     printf("3 - SRTF\n");
+    printf("4 - Prioridade sem preempcao\n");
+    printf("5 - Prioridade com preempcao\n");
+    printf("6 - Round-Robin\n");
+    printf("7 - Round-Robin com prioridade e envelhecimento\n");
 
     printf("\nEscolha o algoritmo: ");
     scanf("%d", &opcao);
 
-    if (opcao < 1 || opcao > 3) {
+    if (opcao < 1 || opcao > 7) {
 
         printf("\nOpcao invalida.\n");
 
@@ -208,6 +215,46 @@ int main() {
             }
 
             resultado = executar_srtf(processos, quantidade);
+            break;
+        case 4:
+
+            printf("\n===== Prioridade sem preempcao =====\n");
+            processos = carregar_processos("../prioridade_sem.txt", &quantidade);
+            if (processos == NULL) {
+                return 1;
+            }
+
+            resultado = executar_prioridade_sem(processos, quantidade);
+            break;
+        case 5:
+
+            printf("\n===== Prioridade com preempcao =====\n");
+            processos = carregar_processos("../prioridade_com.txt", &quantidade);
+            if (processos == NULL) {
+                return 1;
+            }
+
+            resultado = executar_prioridade_com(processos, quantidade);
+            break;
+        case 6:
+
+            printf("\n===== Round-Robin =====\n");
+            processos = carregar_processos("../round_robin.txt", &quantidade);
+            if (processos == NULL) {
+                return 1;
+            }
+
+            resultado = executar_round_robin(processos, quantidade, config);
+            break;
+        case 7:
+
+            printf("\n===== Round-Robin com prioridade e envelhecimento =====\n");
+            processos = carregar_processos("../round_robin_prioridade.txt", &quantidade);
+            if (processos == NULL) {
+                return 1;
+            }
+
+            resultado = executar_round_robin_prioridade(processos, quantidade, config);
             break;
     }
 

@@ -1,7 +1,5 @@
 <title>Simulador de Escalonamento</title>
 <style>
-  /* Layout: painel de controle à esquerda, visualização à direita; empilha no celular.
-     Tema "terminal acadêmico": fundo profundo, acento âmbar, tipografia mono para dados. */
   :root {
     --bg: #f4f2ec;
     --surface: #fffdf8;
@@ -241,7 +239,7 @@
   </header>
 
   <div class="layout">
-    <!-- PAINEL DE CONTROLE -->
+   //painel
     <div class="panel" role="region" aria-label="Configuração">
       <h2><span class="n">01</span> Algoritmo</h2>
       <label class="field" for="algo">Política de escalonamento</label>
@@ -283,7 +281,7 @@
       </div>
     </div>
 
-    <!-- VISUALIZAÇÃO -->
+    
     <div class="viz">
       <div class="metrics" id="metrics"></div>
       <div class="gantt-box">
@@ -303,13 +301,7 @@
 </div>
 
 <script>
-/* ============================================================
-   NÚCLEO DE SIMULAÇÃO
-   Cada função reproduz fielmente a lógica do código em C da equipe:
-   mesma escolha de processo, mesmo desempate e mesma contagem de
-   trocas de contexto. Retorna { exec:[ids por segundo, -1=ocioso],
-   trocas, procs:[{id,criacao,duracao,inicio,fim}] }.
-   ============================================================ */
+
 
 // desempate compartilhado por FCFS/SJF/prioridade:
 // (1) quem já está na CPU  (2) menor tempo restante  (3) aleatório
@@ -338,7 +330,7 @@ function metricas(copia) {
   return { tt: tt / n, tw: tw / n, tr: tr / n };
 }
 
-// ---- algoritmos NÃO preemptivos: FCFS, SJF, Prioridade sem ----
+//lgoritmos NÃO preemptivos: FCFS, SJF, Prioridade sem
 function simularNaoPreempt(procs, criterio) {
   const p = copiar(procs);
   const exec = [];
@@ -419,7 +411,7 @@ const critSRTF = (p, i, esc) =>
 const critPrioP = (p, i, esc) =>
   p[i].prioridade > p[esc].prioridade ? 1 : p[i].prioridade === p[esc].prioridade ? 0 : -1;
 
-// ---- Round-Robin puro (fila FIFO, quantum) ----
+//Round-Robin puro (fila FIFO, quantum)
 function simularRR(procs, quantum) {
   const p = copiar(procs);
   const exec = [];
@@ -455,7 +447,7 @@ function simularRR(procs, quantum) {
   return { exec, trocas, procs: p };
 }
 
-// ---- Round-Robin com prioridade e envelhecimento (aging) ----
+//Round-Robin com prioridade e envelhecimento (aging)
 function simularRRPrio(procs, quantum, aging) {
   const p = copiar(procs);
   const exec = [];
@@ -512,9 +504,7 @@ function simular(algo, procs, cfg) {
   }
 }
 
-/* ============================================================
-   INTERFACE
-   ============================================================ */
+//interface
 const DESCR = {
   fcfs: "Atende na ordem de chegada. Não preemptivo — cada processo roda até o fim.",
   sjf: "Escolhe o de menor duração entre os que já chegaram. Não preemptivo.",
@@ -684,7 +674,7 @@ function construirVertical(r, ids) {
   $("vtable").textContent = linhas.join("\n");
 }
 
-// ---- eventos ----
+//eventos
 $("algo").addEventListener("change", atualizarConfig);
 $("addBtn").addEventListener("click", () => {
   processos.push({ id: processos.length + 1, criacao: 0, duracao: 3, prioridade: 1 });

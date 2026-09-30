@@ -219,7 +219,7 @@ Resultado executar_round_robin(Processo *processos, int quantidade, Configuracao
 
             tempo++; // Passa 1 segundo
             enfileirar_chegadas(&fila, copia, ordem, quantidade, &proximo, tempo); // Verifica se algum processo chegou
-            continue
+            continue;
         }
 
         int atual = fila_remover(&fila); // Pega o primeiro processo da fila

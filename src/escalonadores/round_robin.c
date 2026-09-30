@@ -1,8 +1,7 @@
 #include "round_robin.h"
 
 #include <stdlib.h>
-
-//Funções auxiliares
+#include <time.h>
 
 /* Cria e inicializa um Resultado vazio para começar a execução
 Também é usado caso ocorra algum erro na alocação de memória */ 
@@ -14,7 +13,7 @@ static Resultado resultado_vazio(void) {
     resultado.tempo_medio_resposta = 0;
 
     resultado.trocas_contexto = 0;
-    resultado.execucao = NULL;  // No início, não existe um vetor armazenando a sequência de execução
+    resultado.execucao = NULL;  
     resultado.tamanho_execucao = 0;
 
     return resultado;
@@ -36,11 +35,9 @@ static Processo *copiar_processos(const Processo *processos, int quantidade) {
     return copia;
 }
 
-// Tamanho máximo possível do diagrama (pior caso: ociosa até o último
-// processo chegar, depois executa a soma de todas as durações) 
-
-// Calcula um limite seguro para o tamanho do vetor que registra
-// a sequência de execução dos processos 
+/* Calcula um limite seguro para o tamanho do vetor que registra a sequência
+de execução. Pior caso: a CPU fica ociosa até o último processo chegar e
+depois executa a soma de todas as durações */
 static int calcular_tempo_maximo(const Processo *processos, int quantidade) {
     int ultima_criacao = 0;
     int soma_duracoes = 0;
@@ -80,7 +77,7 @@ static void calcular_metricas(const Processo *copia, int quantidade, Resultado *
     resultado->tempo_medio_resposta = (double)soma_resposta / quantidade;
 }
 
-// Processo com duração <= 0 já nasce "pronto", então arca como concluído
+// Processo com duração <= 0 já nasce "pronto", então marca como concluído
 static int finalizar_processos_vazios(Processo *copia, int quantidade) {
     int finalizados = 0;
 
@@ -107,7 +104,7 @@ typedef struct {
 } Fila;
 //Cria uma fila com determinada capacidade
 static Fila fila_criar(int capacidade) {
-    Fila fila; // cria uma fila com determinada capacidade
+    Fila fila;
 
     fila.itens = malloc(capacidade * sizeof(int)); // reserva memória para armazenar os índices dos processos
     // Inicializa a fila vazia
@@ -118,7 +115,7 @@ static Fila fila_criar(int capacidade) {
     return fila;
 }
 
-// Implementa uma fila circular
+// Insere um processo no final da fila
 static void fila_inserir(Fila *fila, int indice) {
     fila->itens[(fila->cabeca + fila->tamanho) % fila->capacidade] = indice;
     fila->tamanho++;
@@ -143,31 +140,33 @@ static int *ordenar_por_chegada(const Processo *processos, int quantidade) {
     }
 
     for (int i = 0; i < quantidade; i++) {
-        ordem[i] = i;
+        ordem[i] = i; // Começa na ordem original (ainda não ordenada)
     }
 
+    // Insertion sort: ordena "ordem" pelo instante de criação de cada processo
     for (int i = 1; i < quantidade; i++) {
-        int chave = ordem[i];
+        int chave = ordem[i]; // Elemento que vamos posicionar no lugar certo
         int j = i - 1;
 
+        // Empurra pra frente todo elemento com criação maior que o da chave
         while (j >= 0 && processos[ordem[j]].criacao > processos[chave].criacao) {
             ordem[j + 1] = ordem[j];
             j--;
         }
 
-        ordem[j + 1] = chave;
+        ordem[j + 1] = chave; // Encaixa a chave no espaço que sobrou
     }
 
     return ordem;
 }
 
-// Enquanto houver processos que ainda não foram inseridos na fila ou já chegaram, eles são adicionados
+// Adiciona na fila os processos que ainda não entraram e já chegaram
 static void enfileirar_chegadas(
     Fila *fila,
     const Processo *copia,
     const int *ordem,
     int quantidade,
-    int *proximo,
+    int *proximo, // ponteiro: precisa alterar essa variável do chamador entre uma chamada e outra
     int tempo
 ) {
     while (*proximo < quantidade && copia[ordem[*proximo]].criacao <= tempo) {
@@ -193,6 +192,7 @@ Resultado executar_round_robin(Processo *processos, int quantidade, Configuracao
     int *ordem = ordenar_por_chegada(processos, quantidade); // Cria a ordem dos processos por chegada
     Fila fila = fila_criar(quantidade); // Cria a fila do Round Robin
     int *execucao = malloc((calcular_tempo_maximo(processos, quantidade) + 1) * sizeof(int)); // Cria vetor de que processo está usando a cpu em cada instante
+    // Se algum malloc falhou, libera o que já foi alocado (free em NULL não faz nada) e devolve vazio
     if (copia == NULL || ordem == NULL || fila.itens == NULL || execucao == NULL) {
         free(copia);
         free(ordem);
@@ -219,7 +219,7 @@ Resultado executar_round_robin(Processo *processos, int quantidade, Configuracao
 
             tempo++; // Passa 1 segundo
             enfileirar_chegadas(&fila, copia, ordem, quantidade, &proximo, tempo); // Verifica se algum processo chegou
-            continue;
+            continue
         }
 
         int atual = fila_remover(&fila); // Pega o primeiro processo da fila
@@ -233,7 +233,7 @@ Resultado executar_round_robin(Processo *processos, int quantidade, Configuracao
         if (ultimo != -1 && ultimo != atual) {
             resultado.trocas_contexto++;
         }
-// Incialmente, a fatia é igual ao quantum. O quantum indica quantas unidades de tempo o processo pode executarr
+// Inicialmente, a fatia é igual ao quantum. O quantum indica quantas unidades de tempo o processo pode executar
         int fatia = config.quantum;
         if (copia[atual].restante < fatia) {
             fatia = copia[atual].restante;
@@ -247,7 +247,7 @@ Resultado executar_round_robin(Processo *processos, int quantidade, Configuracao
             tempo++;
         }
 
-        ultimo = atual; // Guarda quenm acabou de executar
+        ultimo = atual; // Guarda quem acabou de executar
 
         enfileirar_chegadas(&fila, copia, ordem, quantidade, &proximo, tempo);
 
@@ -275,7 +275,7 @@ Resultado executar_round_robin(Processo *processos, int quantidade, Configuracao
    1) maior força (prioridade + aging acumulado)
    2) quem está esperando há mais tempo (pronto_desde menor) -> round-robin dentro da mesma prioridade
    3) menor tempo restante
-   4) menor ID
+   4) empate total -> escolha aleatória (regra do enunciado)
 */
 
 static int escolher_processo(
@@ -286,6 +286,7 @@ static int escolher_processo(
     const int *pronto_desde
 ) {
     int escolhido = -1; // Ainda não foi escolhido
+    int total_empatados = 0; // quantos empataram em tudo com o "escolhido" até agora
 
     for (int i = 0; i < quantidade; i++) {
 
@@ -293,23 +294,35 @@ static int escolher_processo(
             continue; // 
         }
 
-        if (copia[i].criacao > tempo) { // // Ignora processos que não chegaram
+        if (copia[i].criacao > tempo) { // Ignora processos que não chegaram
             continue;
         }
 
         if (escolhido == -1) {
             escolhido = i;
+            total_empatados = 1;
             continue;
         }
 
         if (forca[i] > forca[escolhido]) { // Se o processo tem força maior, ele é escolhido
             escolhido = i;
+            total_empatados = 1;
         } else if (forca[i] == forca[escolhido]) { // Se as forças são iguais
             if (pronto_desde[i] < pronto_desde[escolhido]) { // Quem está esperando há mais tempo ganha
                 escolhido = i;
-            } else if (pronto_desde[i] == pronto_desde[escolhido] && // Se também chegaram a esperar desde o mesmo instante
+                total_empatados = 1;
+            } else if (pronto_desde[i] == pronto_desde[escolhido] && // Se esperam desde o mesmo instante
                        copia[i].restante < copia[escolhido].restante) { // Escolhe o processo com menor tempo restante
                 escolhido = i;
+                total_empatados = 1;
+            } else if (pronto_desde[i] == pronto_desde[escolhido] &&
+                       copia[i].restante == copia[escolhido].restante) {
+            // Empate total (força, pronto_desde e restante iguais): sorteia entre os empatados
+            // Cada novo empatado tem 1/total_empatados de chance de ficar no lugar do escolhido
+                total_empatados++;
+                if (rand() % total_empatados == 0) {
+                    escolhido = i;
+                }
             }
         }
     }
@@ -317,19 +330,28 @@ static int escolher_processo(
     return escolhido;
 }
 
+// Executa o Round Robin com prioridade e envelhecimento
 Resultado executar_round_robin_prioridade(Processo *processos, int quantidade, Configuracao config) {
     Resultado resultado = resultado_vazio();
 
-    if (quantidade <= 0 || config.quantum <= 0) {
+    // Semeia rand() só na primeira chamada.
+    static int semente_definida = 0;
+    if (!semente_definida) {
+        srand((unsigned int)time(NULL));
+        semente_definida = 1;
+    }
+
+    if (quantidade <= 0 || config.quantum <= 0) { // Se não há processos ou o quantum é inválido, encerra
         return resultado;
     }
 
-    Processo *copia = copiar_processos(processos, quantidade);
-    int *forca_base = malloc(quantidade * sizeof(int)); // Guarda a prioridade original, que pode aumentar pelo aging 
+    Processo *copia = copiar_processos(processos, quantidade); // Cria a cópia
+    int *forca_base = malloc(quantidade * sizeof(int)); // Guarda a prioridade original, que não muda
     int *forca = malloc(quantidade * sizeof(int)); // Guarda a prioridade atual, que pode aumentar pelo aging 
     int *pronto_desde = malloc(quantidade * sizeof(int)); // Guarda desde quando o processo está esperando
-    int *execucao = malloc((calcular_tempo_maximo(processos, quantidade) + 1) * sizeof(int));
+    int *execucao = malloc((calcular_tempo_maximo(processos, quantidade) + 1) * sizeof(int)); // Cria vetor de que processo está usando a cpu em cada instante
 
+    // Se algum malloc falhou, libera o que já foi alocado (free em NULL não faz nada) e devolve vazio
     if (copia == NULL || forca_base == NULL || forca == NULL || pronto_desde == NULL || execucao == NULL) {
         free(copia);
         free(forca_base);
@@ -341,37 +363,41 @@ Resultado executar_round_robin_prioridade(Processo *processos, int quantidade, C
 
     resultado.execucao = execucao;
 
+    // Prepara os três vetores auxiliares, um pra cada processo
     for (int i = 0; i < quantidade; i++) {
-        forca_base[i] = copia[i].prioridade;
-        forca[i] = forca_base[i];
-// Revisar antes de apresentar, pode estar errado 
-        pronto_desde[i] = 2 * copia[i].criacao;
+        forca_base[i] = copia[i].prioridade; // guarda a prioridade original
+        forca[i] = forca_base[i]; // a força começa igual à prioridade, e vai subir com o aging
+        pronto_desde[i] = 2 * copia[i].criacao; // marca desde quando ele está esperando (x2 pra desempatar com quem foi interrompido)
     }
 
-    int tempo = 0;
-    int ultimo = -1;
-    int finalizados = finalizar_processos_vazios(copia, quantidade);
+    int tempo = 0; // Relógio do sistema
+    int ultimo = -1; // Guarda o último processo executado. Começa em -1, pois nenhum processo foi executado ainda
+    int finalizados = finalizar_processos_vazios(copia, quantidade); // Conta os processos que já estavam terminados
 
+// Enquanto ainda houver processo não terminado, continue
     while (finalizados < quantidade) {
 
-        int atual = escolher_processo(copia, quantidade, tempo, forca, pronto_desde);
+        int atual = escolher_processo(copia, quantidade, tempo, forca, pronto_desde); // Decide quem vai usar a CPU agora
 
-        if (atual == -1) {
-            resultado.execucao[resultado.tamanho_execucao] = -1;
+        if (atual == -1) { // Ninguém pronto: CPU ociosa
+            resultado.execucao[resultado.tamanho_execucao] = -1; // Registra cpu ociosa
             resultado.tamanho_execucao++;
 
-            tempo++;
+            tempo++; // Passa 1 segundo
             continue;
         }
 
+ // Se o processo nunca executou antes, registra o instante da primeira execução
         if (copia[atual].inicio == -1) {
             copia[atual].inicio = tempo;
         }
 
+// Se havia um processo anterior e agora estamos executando outro, contabiliza uma troca de contexto
         if (ultimo != -1 && ultimo != atual) {
             resultado.trocas_contexto++;
         }
 
+// Inicialmente, a fatia é igual ao quantum. O quantum indica quantas unidades de tempo o processo pode executar
         int fatia = config.quantum;
         if (copia[atual].restante < fatia) {
             fatia = copia[atual].restante;
@@ -385,24 +411,24 @@ Resultado executar_round_robin_prioridade(Processo *processos, int quantidade, C
             tempo++;
         }
 
-        ultimo = atual;
+        ultimo = atual; // Guarda quem acabou de executar
 
-        if (copia[atual].restante == 0) {
-            copia[atual].fim = tempo;
+        if (copia[atual].restante == 0) { // Depois verifica se o processo terminou
+            copia[atual].fim = tempo; // Se terminou, registra o tempo de fim e aumenta o número de processos finalizados
             finalizados++;
         }
 
-        // Envelhecimento: só quem já esperava antes do fim da fatia
-        // Depois que um processo executa seu quantum, percorre os processos
+        /* Envelhecimento: quem ficou esperando (não é o atual, ainda não
+           terminou e já tinha chegado antes desse instante) ganha +aging
+           na força */
         for (int i = 0; i < quantidade; i++) {
-            // Verifica se não é o processo que acabou de executar, se ainda não terminou e se já já chegou
-            if (i != atual && copia[i].restante > 0 && copia[i].criacao < tempo) { 
-                forca[i] += config.aging; // Então aumenta sua força
+            if (i != atual && copia[i].restante > 0 && copia[i].criacao < tempo) {
+                forca[i] += config.aging; // aumenta a força de quem esperou
             }
         }
 
-        forca[atual] = forca_base[atual]; // o processo não continua acumulando aging enquanto está executando
-        pronto_desde[atual] = 2 * tempo + 1; // atualiza o tempo na fila de espera
+        forca[atual] = forca_base[atual]; // quem rodou volta pra força original (não acumula aging à toa)
+        pronto_desde[atual] = 2 * tempo + 1; // e vai pro fim da fila da sua classe (round-robin dentro da prioridade)
     }
 
     calcular_metricas(copia, quantidade, &resultado);

@@ -15,6 +15,9 @@ import sys
 PASTA = os.path.dirname(os.path.abspath(__file__))
 os.chdir(PASTA)
 
+# Onde esta o codigo C (neste projeto, na pasta src/)
+SRC = "src"
+
 # Nome do executavel (Windows usa .exe)
 EXE = "programa.exe" if os.name == "nt" else "./programa"
 
@@ -25,12 +28,12 @@ def compilar():
     if os.path.exists(alvo):
         return True
     print("Compilando o C...")
-    fontes = ["c/main.c"]
-    for pasta in ("c/escalonadores", "c/leitura"):
+    fontes = [os.path.join(SRC, "main.c")]
+    for pasta in (os.path.join(SRC, "escalonadores"), os.path.join(SRC, "leitura")):
         for f in os.listdir(pasta):
             if f.endswith(".c"):
                 fontes.append(os.path.join(pasta, f))
-    cmd = ["gcc", "-I", "c", "-std=c11", *fontes, "-o", alvo]
+    cmd = ["gcc", "-I", SRC, "-std=c11", *fontes, "-o", alvo]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         print("ERRO ao compilar:\n", r.stderr)
@@ -52,6 +55,11 @@ def rodar_c(opcao, processos, quantum, aging):
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    # nao deixa o navegador guardar a pagina em cache
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     def do_POST(self):
         if self.path != "/run":
             self.send_error(404)
@@ -72,7 +80,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(corpo)
 
-    # deixa o log mais quieto
     def log_message(self, *a):
         pass
 

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Escalonamento</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#0f1220;color:#e7e9f3;
+    margin:0;padding:24px;line-height:1.5}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:1.4rem;margin:0 0 16px}
+  .painel{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:680px){.painel{grid-template-columns:1fr}}
+  .card{background:#191d31;border:1px solid #2c3150;border-radius:12px;padding:16px}
+  label{display:block;font-size:.78rem;color:#9aa0c0;margin-bottom:6px;font-weight:600}
+  select,input,textarea{width:100%;box-sizing:border-box;background:#20243c;color:#e7e9f3;
+    border:1px solid #2c3150;border-radius:8px;padding:10px;font-size:.95rem;font-family:inherit}
+  textarea{min-height:140px;font-family:ui-monospace,Consolas,monospace;resize:vertical}
+  .lin{display:flex;gap:12px;margin-top:12px}
+  .lin>div{flex:1}
+  .dica{font-size:.72rem;color:#9aa0c0;margin-top:6px}
+  button{margin-top:16px;width:100%;background:#6c8cff;color:#fff;border:0;border-radius:9px;
+    padding:12px;font-size:1rem;font-weight:700;cursor:pointer}
+  .metricas{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px}
+  @media(max-width:560px){.metricas{grid-template-columns:repeat(2,1fr)}}
+  .metrica{background:#191d31;border:1px solid #2c3150;border-radius:10px;padding:12px;text-align:center}
+  .metrica b{display:block;font-size:1.3rem;color:#4ad3a5}
+  .metrica span{font-size:.7rem;color:#9aa0c0}
+  h2{font-size:1rem;margin:24px 0 10px}
+  #gantt{display:flex;overflow-x:auto;border:1px solid #2c3150;border-radius:8px}
+  .bloco{display:flex;flex-direction:column;min-width:34px;flex:1}
+  .barra{height:44px;display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:#111;border-right:1px solid #0f1220}
+  .ticks{display:flex}
+  .tick{flex:1;font-size:.68rem;color:#9aa0c0;text-align:left;padding:3px 0 0 2px;
+    border-right:1px solid #2c3150}
+  #erro{color:#ff6b6b;margin-top:14px}
+  pre{background:#12152400;color:#9aa0c0;font-size:.75rem;overflow-x:auto}
+  details{margin-top:18px}
+  summary{cursor:pointer;color:#9aa0c0;font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Simulador de Escalonamento de Processos</h1>
+
+  <div class="painel">
+    <div class="card">
+      <label>Algoritmo</label>
+      <select id="alg">
+        <option value="1">FCFS</option>
+        <option value="2">SJF</option>
+        <option value="3">SRTF</option>
+        <option value="4">Prioridade (sem preempção)</option>
+        <option value="5">Prioridade (com preempção)</option>
+        <option value="6">Round-Robin</option>
+        <option value="7">Round-Robin + prioridade e aging</option>
+      </select>
+      <div class="lin">
+        <div><label>Quantum</label><input id="quantum" type="number" value="2" min="1"></div>
+        <div><label>Aging</label><input id="aging" type="number" value="1" min="0"></div>
+      </div>
+      <div class="dica">Quantum/aging só valem no Round-Robin.</div>
+    </div>
+
+    <div class="card">
+      <label>Processos — uma linha: <code>criacao duracao prioridade</code></label>
+      <textarea id="entrada">0 5 2
+0 2 3
+1 4 1
+3 3 4</textarea>
+    </div>
+  </div>
+
+  <button id="run">Simular</button>
+  <div id="erro"></div>
+
+  <div id="saida" style="display:none">
+    <div class="metricas">
+      <div class="metrica"><b id="m-turn">–</b><span>Turnaround médio</span></div>
+      <div class="metrica"><b id="m-esp">–</b><span>Espera média</span></div>
+      <div class="metrica"><b id="m-resp">–</b><span>Resposta média</span></div>
+      <div class="metrica"><b id="m-troca">–</b><span>Trocas de contexto</span></div>
+    </div>
+
+    <h2>Linha do tempo (Gantt)</h2>
+    <div id="gantt"></div>
+
+    <details>
+      <summary>Ver saída bruta do programa em C</summary>
+      <pre id="bruto"></pre>
+    </details>
+  </div>
+</div>
+
+<script>
+const cores = ["#6c8cff","#4ad3a5","#ff8a5c","#ffd166","#c792ea","#ef5da8","#5cd0ff","#a0e57c"];
+
+document.getElementById("run").addEventListener("click", async function(){
+  const dados = {
+    opcao:    parseInt(document.getElementById("alg").value),
+    processos:document.getElementById("entrada").value,
+    quantum:  parseInt(document.getElementById("quantum").value) || 0,
+    aging:    parseInt(document.getElementById("aging").value) || 0
+  };
+  const erro = document.getElementById("erro");
+  erro.textContent = "";
+
+  let resp;
+  try {
+    resp = await fetch("/run", {method:"POST", body:JSON.stringify(dados)});
+  } catch(e){
+    erro.textContent = "Não consegui falar com o servidor. Ele está rodando? (python servidor.py)";
+    return;
+  }
+  const txt = (await resp.json()).saida || "";
+  document.getElementById("bruto").textContent = txt;
+
+  // Le as metricas direto da saida do C
+  const num = (re) => { const m = txt.match(re); return m ? m[1] : "–"; };
+  document.getElementById("m-turn").textContent  = num(/turnaround:\s*([\d.]+)/i);
+  document.getElementById("m-esp").textContent   = num(/espera:\s*([\d.]+)/i);
+  document.getElementById("m-resp").textContent  = num(/resposta:\s*([\d.]+)/i);
+  document.getElementById("m-troca").textContent = num(/Trocas de contexto:\s*(\d+)/i);
+
+  // Le a linha TIMELINE pra montar o Gantt
+  const linha = txt.match(/TIMELINE:([-\d ]+)/);
+  if (!linha){ erro.textContent = "Não achei a linha do tempo na saída."; return; }
+  const seq = linha[1].trim().split(/\s+/).map(Number);
+
+  document.getElementById("saida").style.display = "block";
+  desenharGantt(seq);
+});
+
+function desenharGantt(seq){
+  const gantt = document.getElementById("gantt");
+  gantt.innerHTML = "";
+
+  for (let t = 0; t < seq.length; t++){
+    const id = seq[t];
+    const bloco = document.createElement("div");
+    bloco.className = "bloco";
+
+    const barra = document.createElement("div");
+    barra.className = "barra";
+    if (id === -1){
+      barra.style.background = "#3a3f5f";
+      barra.textContent = "";
+    } else {
+      barra.style.background = cores[(id-1) % cores.length];
+      barra.textContent = "P" + id;
+    }
+
+    const ticks = document.createElement("div");
+    ticks.className = "ticks";
+    const tick = document.createElement("div");
+    tick.className = "tick";
+    tick.textContent = t;
+    ticks.appendChild(tick);
+
+    bloco.appendChild(barra);
+    bloco.appendChild(ticks);
+    gantt.appendChild(bloco);
+  }
+  // tick final
+  const fim = document.createElement("div");
+  fim.style.fontSize = ".68rem"; fim.style.color = "#9aa0c0";
+  fim.style.padding = "0 0 0 2px"; fim.style.alignSelf = "flex-end";
+  fim.textContent = seq.length;
+  gantt.appendChild(fim);
+}
+</script>
+</body>
+</html>

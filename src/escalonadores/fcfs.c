@@ -10,7 +10,7 @@ static int desempate(
 ) {
 
     /*
-        Menor tempo restante.
+     * Menor tempo restante.
      */
     if (processos[candidato].restante <
         processos[escolhido].restante) {
@@ -19,8 +19,8 @@ static int desempate(
     }
 
     /*
-        Se também houver empate no tempo restante,
-        escolha aleatória.
+     * Se também houver empate no tempo restante,
+     * escolha aleatória.
      */
     if (processos[candidato].restante ==
         processos[escolhido].restante) {
@@ -41,21 +41,21 @@ static int escolher_processo(Processo *processos, int quantidade, int tempo) {
     for (int i = 0; i < quantidade; i++) {
 
         /*
-            Processo já terminou.
+         * Processo já terminou.
          */
         if (processos[i].restante <= 0) {
             continue;
         }
 
         /*
-            Processo ainda não chegou.
+         * Processo ainda não chegou.
          */
         if (processos[i].criacao > tempo) {
             continue;
         }
 
         /*
-            Primeiro processo disponível.
+         * Primeiro processo disponível.
          */
         if (escolhido == -1) {
             escolhido = i;
@@ -63,8 +63,8 @@ static int escolher_processo(Processo *processos, int quantidade, int tempo) {
         }
 
         /*
-            Critério principal do FCFS:
-            processo que chegou primeiro.
+         * Critério principal do FCFS:
+         * processo que chegou primeiro.
          */
         if (
             processos[i].criacao < processos[escolhido].criacao
@@ -73,9 +73,9 @@ static int escolher_processo(Processo *processos, int quantidade, int tempo) {
         }
 
         /*
-            Se chegaram no mesmo instante,
-            aplicamos os critérios de desempate
-            definidos pelo trabalho.
+         * Se chegaram no mesmo instante,
+         * aplicamos os critérios de desempate
+         * definidos pelo trabalho.
          */
         else if (
             processos[i].criacao ==

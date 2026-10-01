@@ -9,6 +9,7 @@
 #include "escalonadores/prioridade_sem.h"
 #include "escalonadores/prioridade_com.h"
 #include "escalonadores/round_robin.h"
+#include "escalonadores/round_robin_prioridade_envelhecimento.h"
 
 
 Processo *carregar_processos(const char *nome_arquivo, int *quantidade) {
@@ -154,7 +155,7 @@ int executar_opcao(int opcao, const char *arquivo) {
             printf("\n===== Round-Robin com prioridade e envelhecimento =====\n");
             processos = carregar_processos(arquivo, &quantidade);
             if (processos == NULL) return 1;
-            resultado = executar_round_robin_prioridade(processos, quantidade, config);
+            resultado = executar_round_robin_prioridade_envelhecimento(processos, quantidade, config);
             break;
         default:
             printf("\nOpcao invalida.\n");
@@ -203,13 +204,13 @@ int main(int argc, char *argv[]) {
     */
     const char *arquivo;
     switch (opcao) {
-        case 1: arquivo = "../entrada.txt"; break;
-        case 2: arquivo = "../entrada.txt"; break;
-        case 3: arquivo = "../entrada.txt"; break;
-        case 4: arquivo = "../entrada.txt"; break;
-        case 5: arquivo = "../entrada.txt"; break;
-        case 6: arquivo = "../entrada.txt"; break;
-        case 7: arquivo = "../entrada.txt"; break;
+        case 1: arquivo = "fcfs.txt"; break;
+        case 2: arquivo = "sjf.txt"; break;
+        case 3: arquivo = "srtf.txt"; break;
+        case 4: arquivo = "prioridade_sem.txt"; break;
+        case 5: arquivo = "prioridade_com.txt"; break;
+        case 6: arquivo = "round_robin.txt"; break;
+        case 7: arquivo = "round_robin_prioridade_envelhecimento.txt"; break;
         default:
             printf("\nOpcao invalida.\n");
             return 1;

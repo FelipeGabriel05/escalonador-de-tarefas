@@ -203,13 +203,13 @@ int main(int argc, char *argv[]) {
     */
     const char *arquivo;
     switch (opcao) {
-        case 1: arquivo = "fcfs.txt"; break;
-        case 2: arquivo = "sjf.txt"; break;
-        case 3: arquivo = "srtf.txt"; break;
-        case 4: arquivo = "prioridade_sem.txt"; break;
-        case 5: arquivo = "prioridade_com.txt"; break;
-        case 6: arquivo = "round_robin.txt"; break;
-        case 7: arquivo = "round_robin_prioridade.txt"; break;
+        case 1: arquivo = "../entrada.txt"; break;
+        case 2: arquivo = "../entrada.txt"; break;
+        case 3: arquivo = "../entrada.txt"; break;
+        case 4: arquivo = "../entrada.txt"; break;
+        case 5: arquivo = "../entrada.txt"; break;
+        case 6: arquivo = "../entrada.txt"; break;
+        case 7: arquivo = "../entrada.txt"; break;
         default:
             printf("\nOpcao invalida.\n");
             return 1;

@@ -199,7 +199,8 @@ int main(int argc, char *argv[]) {
     scanf("%d", &opcao);
 
     /*
-        No menu, cada algoritmo usa seu proprio arquivo de teste.
+        Menu feito para testar um txt diferente. (Usado antes para testar cada algoritmo).
+        Agora com interface aqui fica a critério escolher outros arquivos txt para teste.
     */
     const char *arquivo;
     switch (opcao) {

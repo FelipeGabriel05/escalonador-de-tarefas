@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-/* Cria e inicializa um Resultado vazio para começar a execução
-Também é usado caso ocorra algum erro na alocação de memória */ 
+/* Cria e inicializa um Resultado vazio para começar a execução */ 
 static Resultado resultado_vazio(void) {
     Resultado resultado;
 
@@ -37,7 +36,8 @@ static Processo *copiar_processos(const Processo *processos, int quantidade) {
 
 /* Calcula um limite seguro para o tamanho do vetor que registra a sequência
 de execução. Pior caso: a CPU fica ociosa até o último processo chegar e
-depois executa a soma de todas as durações */
+depois executa a soma de todas as durações */   
+// Ex: P1 chega no tempo 0 e dura 3, depois P2 chega no tempo 10 e dura 2
 static int calcular_tempo_maximo(const Processo *processos, int quantidade) {
     int ultima_criacao = 0;
     int soma_duracoes = 0;
@@ -66,12 +66,12 @@ static void calcular_metricas(const Processo *copia, int quantidade, Resultado *
         int espera = turnaround - copia[i].duracao; // espera = turnaround - duração
         int resposta = copia[i].inicio - copia[i].criacao; // resposta = primeira execução - chegada
 
-        // Vai acumulando os valores de todos os processos
+        // Acumula os valores de todos os processos
         soma_turnaround += turnaround;
         soma_espera += espera;
         soma_resposta += resposta;
     }
-    // Depois calcula a média dessas métricas
+    // Depois calcula a média das métricas
     resultado->tempo_medio_turnaround = (double)soma_turnaround / quantidade;
     resultado->tempo_medio_espera = (double)soma_espera / quantidade;
     resultado->tempo_medio_resposta = (double)soma_resposta / quantidade;
@@ -97,11 +97,12 @@ static int finalizar_processos_vazios(Processo *copia, int quantidade) {
 // Cria a estrutura de fila
 // Fila circular de índices do vetor "copia"
 typedef struct {
-    int *itens; // vetor que armazena os índices dos processos
-    int capacidade; // quantidade máxima de elementos que a fila pode armazenar = quantidade de processos
-    int cabeca; // indica onde está o primeiro elemento da fila
-    int tamanho; // indica quantos elementos existem atualmente na fila
+    int *itens; // vetor que guarda os índices dos processos
+    int capacidade; // máximo de elementos que a fila pode armazenar = quantidade de processos
+    int cabeca; // posição no vetor da fila onde começa a fila
+    int tamanho; // quantos elementos existem atualmente na fila
 } Fila;
+
 //Cria uma fila com determinada capacidade
 static Fila fila_criar(int capacidade) {
     Fila fila;
@@ -115,67 +116,100 @@ static Fila fila_criar(int capacidade) {
     return fila;
 }
 
-// Insere um processo no final da fila
+/* Insere um processo no final da fila circular. */
 static void fila_inserir(Fila *fila, int indice) {
+    /*
+        Calcula a posição onde o novo processo será inserido.
+        cabeca indica o início da fila e tamanho indica quantos
+        processos já estão na fila.
+        O % capacidade faz a fila voltar ao início quando chega ao final do vetor.
+    */
     fila->itens[(fila->cabeca + fila->tamanho) % fila->capacidade] = indice;
+
+    /* Aumenta a quantidade de processos na fila. */
     fila->tamanho++;
 }
 
-// Retorna o processo que estava na frente
+
+/* Remove e retorna o processo que está na frente da fila. */
 static int fila_remover(Fila *fila) {
-    int indice = fila->itens[fila->cabeca]; // pega o primeiro processo
 
-    fila->cabeca = (fila->cabeca + 1) % fila->capacidade; // depois move a cabeça
-    fila->tamanho--; // e diminui o tamanho
+    /* Guarda o processo que está na frente da fila. */
+    int indice = fila->itens[fila->cabeca];
 
+    /*
+        Move a cabeça para o próximo processo.
+        O % capacidade mantém a fila circular.
+    */
+    fila->cabeca = (fila->cabeca + 1) % fila->capacidade;
+
+    /* Diminui a quantidade de processos na fila. */
+    fila->tamanho--;
+
+    /* Retorna o processo que foi removido. */
     return indice;
 }
 
-// Cria um vetor de índices ordenados por instante de criação do processo
+// Cria um vetor com os índices dos processos em ordem de criação(chegada)
 static int *ordenar_por_chegada(const Processo *processos, int quantidade) {
     int *ordem = malloc(quantidade * sizeof(int));
 
+    // Se não foi possível reservar memória, retorna NULL
     if (ordem == NULL) {
         return NULL;
     }
 
+    /*
+        Preenche o vetor com os índices dos processos na ordem original
+        Por exemplo: [0, 1, 2, 3]
+    */
     for (int i = 0; i < quantidade; i++) {
-        ordem[i] = i; // Começa na ordem original (ainda não ordenada)
+        ordem[i] = i;
     }
 
-    // Insertion sort: ordena "ordem" pelo instante de criação de cada processo
+    /*
+        Ordena os índices pelo instante de criação usando Insertion Sort
+        O vetor original de processos não é alterado
+    */
     for (int i = 1; i < quantidade; i++) {
         int chave = ordem[i]; // Elemento que vamos posicionar no lugar certo
         int j = i - 1;
 
-        // Empurra pra frente todo elemento com criação maior que o da chave
+        // Move para frente os processos que chegaram depois da chave. 
         while (j >= 0 && processos[ordem[j]].criacao > processos[chave].criacao) {
             ordem[j + 1] = ordem[j];
             j--;
         }
 
-        ordem[j + 1] = chave; // Encaixa a chave no espaço que sobrou
+        ordem[j + 1] = chave; // Coloca a chave na posição correta
     }
 
     return ordem;
 }
 
-// Adiciona na fila os processos que ainda não entraram e já chegaram
+// Adiciona na fila os processos que já chegaram e ainda precisam executar
 static void enfileirar_chegadas(
     Fila *fila,
     const Processo *copia,
     const int *ordem,
     int quantidade,
-    int *proximo, // ponteiro: precisa alterar essa variável do chamador entre uma chamada e outra
+    int *proximo,
     int tempo
 ) {
+    /*
+        Verifica os processos em ordem de chegada.
+        Enquanto o próximo processo já tiver chegado,
+        ele pode ser colocado na fila.
+    */
     while (*proximo < quantidade && copia[ordem[*proximo]].criacao <= tempo) {
-        int indice = ordem[*proximo]; // Pega o índice do próximo processo
+        int indice = ordem[*proximo];
 
+        /* Se o processo ainda não terminou, coloca ele na fila. */
         if (copia[indice].restante > 0) {
-            fila_inserir(fila, indice); // Se ele ainda precisa executar, coloca na fila
+            fila_inserir(fila, indice);
         }
 
+        /* Avança para o próximo processo da lista de chegadas. */
         (*proximo)++;
     }
 }
@@ -192,7 +226,7 @@ Resultado executar_round_robin(Processo *processos, int quantidade, Configuracao
     int *ordem = ordenar_por_chegada(processos, quantidade); // Cria a ordem dos processos por chegada
     Fila fila = fila_criar(quantidade); // Cria a fila do Round Robin
     int *execucao = malloc((calcular_tempo_maximo(processos, quantidade) + 1) * sizeof(int)); // Cria vetor de que processo está usando a cpu em cada instante
-    // Se algum malloc falhou, libera o que já foi alocado (free em NULL não faz nada) e devolve vazio
+ 
     if (copia == NULL || ordem == NULL || fila.itens == NULL || execucao == NULL) {
         free(copia);
         free(ordem);
@@ -233,31 +267,49 @@ Resultado executar_round_robin(Processo *processos, int quantidade, Configuracao
         if (ultimo != -1 && ultimo != atual) {
             resultado.trocas_contexto++;
         }
-// Inicialmente, a fatia é igual ao quantum. O quantum indica quantas unidades de tempo o processo pode executar
-        int fatia = config.quantum;
-        if (copia[atual].restante < fatia) {
-            fatia = copia[atual].restante;
-        }
+/*
+    Define a fatia de tempo como o quantum, que é o tempo máximo
+    que o processo pode executar antes de voltar para a fila.
+*/
+int fatia = config.quantum;
 
-        for (int s = 0; s < fatia; s++) {
-            resultado.execucao[resultado.tamanho_execucao] = copia[atual].id;
-            resultado.tamanho_execucao++;
+/*
+    Se o processo precisar de menos tempo que o quantum,
+    a fatia será apenas o tempo restante.
+*/
+if (copia[atual].restante < fatia) {
+    fatia = copia[atual].restante;
+}
 
-            copia[atual].restante--;
-            tempo++;
-        }
+/*
+    Executa o processo uma unidade de tempo por vez,
+    registrando a execução, reduzindo o tempo restante
+    e avançando o relógio.
+*/
+for (int s = 0; s < fatia; s++) {
+    resultado.execucao[resultado.tamanho_execucao] = copia[atual].id;
+    resultado.tamanho_execucao++;
 
-        ultimo = atual; // Guarda quem acabou de executar
+    copia[atual].restante--;
+    tempo++;
+}
 
-        enfileirar_chegadas(&fila, copia, ordem, quantidade, &proximo, tempo);
+/* Guarda o processo que acabou de executar. */
+ultimo = atual;
 
-        if (copia[atual].restante == 0) { // Depois verifica se o processo terminou
-            copia[atual].fim = tempo; // Se terminou, registra o tempo de fim e aumenta o número de processos finalizados
-            finalizados++;
-        } else {
-            fila_inserir(&fila, atual); // Se não terminou, coloca o processo novamente no final da fila
-        }
-    }
+/* Verifica se novos processos chegaram durante a execução. */
+enfileirar_chegadas(&fila, copia, ordem, quantidade, &proximo, tempo);
+
+/*
+    Se terminou, registra o tempo de fim.
+    Caso contrário, coloca o processo novamente no final da fila.
+*/
+if (copia[atual].restante == 0) {
+    copia[atual].fim = tempo;
+    finalizados++;
+} else {
+    fila_inserir(&fila, atual);
+}
 
     calcular_metricas(copia, quantidade, &resultado);
 
@@ -278,50 +330,64 @@ Resultado executar_round_robin(Processo *processos, int quantidade, Configuracao
    4) empate total -> escolha aleatória (regra do enunciado)
 */
 
+// Escolhe qual processo deve executar agora e retorna o índice dele
 static int escolher_processo(
-    const Processo *copia,
-    int quantidade,
-    int tempo,
-    const int *forca,
-    const int *pronto_desde
+    const Processo *copia, // Processos da simulação
+    int quantidade, // Quantidade de processos
+    int tempo, // Instante atual
+    const int *forca, // Vetor força atual de cada processo
+    const int *pronto_desde // Vetor ordem de espera dos processos
 ) {
-    int escolhido = -1; // Ainda não foi escolhido
-    int total_empatados = 0; // quantos empataram em tudo com o "escolhido" até agora
+    int escolhido = -1; // Índice do melhor candidato encontrado
+    int total_empatados = 0; // Quantidade de processos empatados em todos os critérios
 
-    for (int i = 0; i < quantidade; i++) {
+    // Percorre os processos
+    for (int i = 0; i < quantidade; i++) { 
 
-        if (copia[i].restante <= 0) { // Ignora processos terminados
+        if (copia[i].restante <= 0) { // Ignora processos já terminados
             continue; // 
         }
 
-        if (copia[i].criacao > tempo) { // Ignora processos que não chegaram
+        if (copia[i].criacao > tempo) { // Ignora processos que ainda não chegaram
             continue;
         }
 
+        // Se ainda não existe escolhido, o primeiro processo válido encontrado vira o candidato inicial
         if (escolhido == -1) {
             escolhido = i;
             total_empatados = 1;
             continue;
         }
 
-        if (forca[i] > forca[escolhido]) { // Se o processo tem força maior, ele é escolhido
+        // 1º critério: maior força
+        if (forca[i] > forca[escolhido]) { // 
             escolhido = i;
             total_empatados = 1;
-        } else if (forca[i] == forca[escolhido]) { // Se as forças são iguais
+        } 
+
+        // 2º critério: se a força empatar, vence quem espera há mais tempo
+        else if (forca[i] == forca[escolhido]) { // Se as forças são iguais
             if (pronto_desde[i] < pronto_desde[escolhido]) { // Quem está esperando há mais tempo ganha
                 escolhido = i;
                 total_empatados = 1;
-            } else if (pronto_desde[i] == pronto_desde[escolhido] && // Se esperam desde o mesmo instante
+            } 
+
+        // 3º critério: se também empatar o tempo de espera, vence quem tem menor tempo restante
+            else if (pronto_desde[i] == pronto_desde[escolhido] && // Se esperam desde o mesmo instante
                        copia[i].restante < copia[escolhido].restante) { // Escolhe o processo com menor tempo restante
                 escolhido = i;
                 total_empatados = 1;
-            } else if (pronto_desde[i] == pronto_desde[escolhido] &&
+            }
+
+        // 4º critério: empate total → escolha aleatória
+            else if (pronto_desde[i] == pronto_desde[escolhido] &&
                        copia[i].restante == copia[escolhido].restante) {
-            // Empate total (força, pronto_desde e restante iguais): sorteia entre os empatados
-            // Cada novo empatado tem 1/total_empatados de chance de ficar no lugar do escolhido
                 total_empatados++;
+
+                // Sorteia entre todos os empatados
+                // Ex.: 2 empatados → rand() % 2 pode dar 0, 1 
                 if (rand() % total_empatados == 0) {
-                    escolhido = i;
+                    escolhido = i; // Se der 0, o atual vira o escolhido
                 }
             }
         }
@@ -334,10 +400,10 @@ static int escolher_processo(
 Resultado executar_round_robin_prioridade(Processo *processos, int quantidade, Configuracao config) {
     Resultado resultado = resultado_vazio();
 
-    // Semeia rand() só na primeira chamada.
+    // Semeia rand() só na primeira chamada
     static int semente_definida = 0;
     if (!semente_definida) {
-        srand((unsigned int)time(NULL));
+        srand((unsigned int)time(NULL)); 
         semente_definida = 1;
     }
 
@@ -345,8 +411,8 @@ Resultado executar_round_robin_prioridade(Processo *processos, int quantidade, C
         return resultado;
     }
 
-    Processo *copia = copiar_processos(processos, quantidade); // Cria a cópia
-    int *forca_base = malloc(quantidade * sizeof(int)); // Guarda a prioridade original, que não muda
+    Processo *copia = copiar_processos(processos, quantidade); // Cria uma cópia dos processos originais
+    int *forca_base = malloc(quantidade * sizeof(int)); // Guarda a prioridade original
     int *forca = malloc(quantidade * sizeof(int)); // Guarda a prioridade atual, que pode aumentar pelo aging 
     int *pronto_desde = malloc(quantidade * sizeof(int)); // Guarda desde quando o processo está esperando
     int *execucao = malloc((calcular_tempo_maximo(processos, quantidade) + 1) * sizeof(int)); // Cria vetor de que processo está usando a cpu em cada instante
@@ -361,20 +427,22 @@ Resultado executar_round_robin_prioridade(Processo *processos, int quantidade, C
         return resultado;
     }
 
-    resultado.execucao = execucao;
+    resultado.execucao = execucao; // Guarda o vetor de execução dentro do resultado
 
     // Prepara os três vetores auxiliares, um pra cada processo
     for (int i = 0; i < quantidade; i++) {
-        forca_base[i] = copia[i].prioridade; // guarda a prioridade original
-        forca[i] = forca_base[i]; // a força começa igual à prioridade, e vai subir com o aging
-        pronto_desde[i] = 2 * copia[i].criacao; // marca desde quando ele está esperando (x2 pra desempatar com quem foi interrompido)
+        forca_base[i] = copia[i].prioridade; // Guarda a prioridade original
+        forca[i] = forca_base[i]; // A força começa igual à prioridade e aumenta com o aging
+        // Chave de ordem: diferencia chegada e retorno ao estado de pronto
+        // Chegadas recebem valores pares e retornos recebem o ímpar seguinte
+        pronto_desde[i] = 2 * copia[i].criacao; 
     }
 
     int tempo = 0; // Relógio do sistema
-    int ultimo = -1; // Guarda o último processo executado. Começa em -1, pois nenhum processo foi executado ainda
+    int ultimo = -1; // Guarda o último processo executado. Começa em -1 porque nenhum executou ainda
     int finalizados = finalizar_processos_vazios(copia, quantidade); // Conta os processos que já estavam terminados
 
-// Enquanto ainda houver processo não terminado, continue
+// Enquanto houver processos não terminados, continua a simulação
     while (finalizados < quantidade) {
 
         int atual = escolher_processo(copia, quantidade, tempo, forca, pronto_desde); // Decide quem vai usar a CPU agora
@@ -397,16 +465,21 @@ Resultado executar_round_robin_prioridade(Processo *processos, int quantidade, C
             resultado.trocas_contexto++;
         }
 
-// Inicialmente, a fatia é igual ao quantum. O quantum indica quantas unidades de tempo o processo pode executar
+// A fatia começa com o valor do quantum
+// Fatia = tempo que o processo vai executar nesta rodada
         int fatia = config.quantum;
+        // Se o processo precisar de menos tempo para terminar do que o quantum, a fatia fica igual ao tempo restante
         if (copia[atual].restante < fatia) {
             fatia = copia[atual].restante;
         }
 
+        // Executa o processo uma unidade de tempo por vez
         for (int s = 0; s < fatia; s++) {
+            // Registra o processo que está usando a CPU neste instante
             resultado.execucao[resultado.tamanho_execucao] = copia[atual].id;
             resultado.tamanho_execucao++;
 
+            // Consome uma unidade do tempo restante e avança o relógio
             copia[atual].restante--;
             tempo++;
         }
@@ -418,18 +491,19 @@ Resultado executar_round_robin_prioridade(Processo *processos, int quantidade, C
             finalizados++;
         }
 
-        /* Envelhecimento: quem ficou esperando (não é o atual, ainda não
-           terminou e já tinha chegado antes desse instante) ganha +aging
-           na força */
+        /*
+            Aging: processos que estão esperando ganham força.
+            Não aplica ao processo atual, aos finalizados ou aos que ainda não chegaram.
+        */
         for (int i = 0; i < quantidade; i++) {
             if (i != atual && copia[i].restante > 0 && copia[i].criacao < tempo) {
-                forca[i] += config.aging; // aumenta a força de quem esperou
+                forca[i] += config.aging; // Aumenta a força pelo aging
             }
         }
 
-        forca[atual] = forca_base[atual]; // quem rodou volta pra força original (não acumula aging à toa)
-        pronto_desde[atual] = 2 * tempo + 1; // e vai pro fim da fila da sua classe (round-robin dentro da prioridade)
-    }
+        forca[atual] = forca_base[atual]; // Restaura a força original do processo que executou
+        // Retorno ao estado de pronto: recebe o ímpar seguinte na chave de ordem
+        pronto_desde[atual] = 2 * tempo + 1;
 
     calcular_metricas(copia, quantidade, &resultado);
 

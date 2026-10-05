@@ -9,19 +9,15 @@ static int desempate(
     int candidato
 ) {
 
-    /*
-        Menor tempo restante.
-     */
+    
+    // Menor tempo restante.
     if (processos[candidato].restante <
         processos[escolhido].restante) {
 
         return candidato;
     }
 
-    /*
-        Se também houver empate no tempo restante,
-        escolha aleatória.
-     */
+    // Se também houver empate no tempo restante, escolha aleatória
     if (processos[candidato].restante ==
         processos[escolhido].restante) {
 
@@ -40,32 +36,23 @@ static int escolher_processo(Processo *processos, int quantidade, int tempo) {
 
     for (int i = 0; i < quantidade; i++) {
 
-        /*
-            Processo já terminou.
-         */
+        // Processo já terminou.
         if (processos[i].restante <= 0) {
             continue;
         }
 
-        /*
-            Processo ainda não chegou.
-         */
+        // Processo ainda não chegou.
         if (processos[i].criacao > tempo) {
             continue;
         }
 
-        /*
-            Primeiro processo disponível.
-         */
+        // Primeiro processo disponível.
         if (escolhido == -1) {
             escolhido = i;
             continue;
         }
 
-        /*
-            Critério principal do FCFS:
-            processo que chegou primeiro.
-         */
+        // Critério principal do FCFS: processo que chegou primeiro.
         if (
             processos[i].criacao < processos[escolhido].criacao
         ) {
@@ -164,10 +151,8 @@ Resultado executar_fcfs(Processo *processos, int quantidade) {
     }
 
 
-    /*
-        "tempo" representa o relógio da simulação.
-        Começamos no instante 0.
-    */
+    // tempo: representa o relógio da simulação.
+    // Começamos no instante 0.
     int tempo = 0;
 
 
@@ -271,19 +256,16 @@ Resultado executar_fcfs(Processo *processos, int quantidade) {
         tempo++;
 
 
-        /*
-         * Se o tempo restante chegou a 0,
-         * o processo terminou.
-         */
+        // Se o tempo restante chegou a 0, o processo terminou.
         if (copia[processo_atual].restante == 0) {
 
             /*
-                "tempo" já foi incrementado.
+                tempo: já foi incrementado.
                 Portanto, se P1 começou em 0 e executou
                 durante 5 segundos:
                 início = 0
                 fim = 5
-             */
+            */
             copia[processo_atual].fim = tempo;
 
             // Aumentamos a quantidade de processos finalizados.

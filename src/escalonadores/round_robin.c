@@ -311,6 +311,8 @@ if (copia[atual].restante == 0) {
     fila_inserir(&fila, atual);
 }
 
+    } // fim do while principal
+
     calcular_metricas(copia, quantidade, &resultado);
 
     free(copia);
@@ -504,6 +506,8 @@ Resultado executar_round_robin_prioridade(Processo *processos, int quantidade, C
         forca[atual] = forca_base[atual]; // Restaura a força original do processo que executou
         // Retorno ao estado de pronto: recebe o ímpar seguinte na chave de ordem
         pronto_desde[atual] = 2 * tempo + 1;
+
+    } // fim do while principal
 
     calcular_metricas(copia, quantidade, &resultado);
 

@@ -308,11 +308,12 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
             tempo++;
 
             /*
-                Como a CPU ficou ociosa, não consideramos
-                a próxima entrada como uma troca de contexto.
+                CPU ociosa: ninguem esta executando agora.
+                NAO zeramos ultimo_processo: se depois da
+                ociosidade um processo diferente assumir, isso
+                ainda e uma troca (mesma regra dos demais algoritmos).
             */
             processo_atual = -1;
-            ultimo_processo = -1;
 
             continue;
         }
@@ -321,23 +322,26 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
         /*
             Verificamos se ocorreu uma troca de contexto.
 
-            Só existe troca quando um processo que já estava
-            utilizando a CPU é substituído por outro.
+            Existe troca sempre que o processo na CPU muda em
+            relação ao ULTIMO que executou, seja por preempção
+            ou porque o anterior terminou e outro assumiu.
 
-            Se a CPU estava ociosa, não contamos como troca.
+            Se a CPU estava ociosa (ultimo_processo == -1),
+            não contamos como troca.
         */
         if (
-            processo_atual != -1 &&
-            processo_atual != novo_processo
+            ultimo_processo != -1 &&
+            ultimo_processo != novo_processo
         ) {
             resultado.trocas_contexto++;
         }
 
 
         /*
-            Atualizamos o processo atual.
+            Atualizamos o processo atual e o ultimo executado.
         */
         processo_atual = novo_processo;
+        ultimo_processo = novo_processo;
 
 
         /*

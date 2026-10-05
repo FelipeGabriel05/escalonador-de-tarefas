@@ -75,6 +75,7 @@ Resultado executar_prioridade_com(Processo *processos, int quantidade) {
     int tempo = 0; // relogio da simulacao, começa em 0
     int finalizados = 0; //quantos processos ja terminaram
     int atual = -1; //-1 se ninguem
+    int ultimo = -1; //ultimo processo que executou (para contar trocas apos termino)
 
     while (finalizados < quantidade) {
         // reavalia toda hora, se chegar alguem mais prioritario ele assume
@@ -84,15 +85,18 @@ Resultado executar_prioridade_com(Processo *processos, int quantidade) {
             resultado.execucao[resultado.tamanho_execucao] = -1; //coloca -1 na proxima casa vazia
             resultado.tamanho_execucao++; //avanca para a casa seguinte
             tempo++; //incrementa para nao ficar preso no mesmo minuto pra sempre
-            atual = -1; //não tem ninguém na CPU agora (evita troca de contexto)
+            atual = -1; //não tem ninguém na CPU agora
+            // NAO zera 'ultimo': uma troca P1 -> ocioso -> P2 ainda conta,
+            // igual aos demais algoritmos
             continue;
         }
 
-        // se o processo mudou, houve troca de contexto
-        if (atual != -1 && atual != novo)
+        // se o processo na CPU mudou (por preempcao OU porque o anterior terminou), houve troca
+        if (ultimo != -1 && ultimo != novo)
             resultado.trocas_contexto++;
 
         atual = novo;
+        ultimo = novo; //guarda o ultimo que executou
 
 	//se eh a primeira vez, registra o instante
         if (copia[atual].inicio == -1)

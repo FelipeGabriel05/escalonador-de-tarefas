@@ -87,44 +87,29 @@ static int escolher_processo(
     int escolhido = -1;
 
 
-    /*
-        Percorremos todos os processos.
-    */
+    // Percorremos todos os processos.
     for (int i = 0; i < quantidade; i++) {
 
-        /*
-            Processos que já terminaram não podem
-            ser escolhidos novamente.
-        */
+        // Processos que já terminaram não podem ser escolhidos novamente.
         if (processos[i].restante <= 0) {
             continue;
         }
 
 
-        /*
-            Processos que ainda não chegaram não
-            estão disponíveis.
-        */
+        // Processos que ainda não chegaram não estão disponíveis.
         if (processos[i].criacao > tempo) {
             continue;
         }
 
 
-        /*
-            Se ainda não temos um processo escolhido,
-            o processo atual passa a ser o candidato.
-        */
+        // Se ainda não temos um processo escolhido, o processo atual passa a ser o candidato.
         if (escolhido == -1) {
             escolhido = i;
             continue;
         }
 
 
-        /*
-            Critério principal do SJF:
-
-            menor duração.
-        */
+        // Critério principal do SJF: menor duração.
         if (processos[i].duracao <
             processos[escolhido].duracao) {
 
@@ -132,10 +117,7 @@ static int escolher_processo(
         }
 
 
-        /*
-            Se os dois processos possuem a mesma duração,
-            aplicamos a regra de desempate.
-        */
+        // Se os dois processos possuem a mesma duração, aplicamos a regra de desempate.
         else if (
             processos[i].duracao ==
             processos[escolhido].duracao
@@ -156,19 +138,13 @@ static int escolher_processo(
 
 /*
     Executa o algoritmo SJF (Shortest Job First).
-
     O SJF é um algoritmo não preemptivo.
-
     Isso significa que, depois que um processo começa
     a executar, ele permanece utilizando a CPU até terminar.
-
     Recebe:
-
         processos  -> vetor com os processos
         quantidade -> quantidade de processos
-
     Retorna:
-
         Resultado contendo:
         - tempo médio de turnaround
         - tempo médio de espera
@@ -180,10 +156,6 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
     Resultado resultado;
 
-
-    /*
-        Inicializamos o resultado.
-    */
     resultado.tempo_medio_turnaround = 0;
     resultado.tempo_medio_espera = 0;
     resultado.tempo_medio_resposta = 0;
@@ -194,9 +166,7 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
     resultado.tamanho_execucao = 0;
 
 
-    /*
-        Não há nada para executar se não existem processos.
-    */
+    // Não há nada para executar se não existem processos.
     if (quantidade <= 0) {
         return resultado;
     }
@@ -204,12 +174,10 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
     /*
         Criamos uma cópia dos processos.
-
         Durante a simulação precisamos alterar:
         - tempo restante;
         - instante de início;
         - instante de término.
-
         A cópia evita modificar os processos originais.
     */
     Processo *copia = malloc(quantidade * sizeof(Processo));
@@ -218,9 +186,7 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
         return resultado;
     }
 
-    /*
-        Copiamos os processos.
-    */
+    // Copiamos os processos.
     for (int i = 0; i < quantidade; i++) {
         copia[i] = processos[i];
     }
@@ -228,7 +194,6 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
     /*
         Calculamos uma capacidade inicial para o diagrama.
-
         Consideramos também possíveis períodos em que
         a CPU ficará ociosa antes da chegada dos processos.
     */
@@ -246,9 +211,7 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
     tempo_total += 1;
 
 
-    /*
-        Alocamos memória para o diagrama.
-    */
+    // Alocamos memória para o diagrama.
     resultado.execucao =
         malloc(tempo_total * sizeof(int));
 
@@ -258,21 +221,16 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
     }
 
 
-    /*
-        Relógio da simulação.
-    */
+    // Relógio da simulação.
     int tempo = 0;
 
 
-    /*
-        Quantidade de processos que já terminaram.
-    */
+    // Quantidade de processos que já terminaram.
     int finalizados = 0;
 
 
     /*
         Processo que está atualmente utilizando a CPU.
-
         -1 significa que a CPU está livre.
     */
     int processo_atual = -1;
@@ -280,14 +238,13 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
     /*
         Processo que estava utilizando a CPU anteriormente.
-
         É utilizado para contabilizar trocas de contexto.
     */
     int processo_anterior = -1;
 
 
     /*
-        A simulação continua até que todos os processos
+        O loop continua até que todos os processos
         tenham terminado.
     */
     while (finalizados < quantidade) {
@@ -309,7 +266,6 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
             /*
                 Nenhum processo está disponível.
-
                 Nesse caso a CPU fica ociosa durante
                 um segundo.
             */
@@ -324,7 +280,6 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
             /*
                 Se é a primeira vez que o processo recebe
                 a CPU, registramos seu instante de início.
-
                 Esse valor será utilizado para calcular
                 o tempo de resposta.
             */
@@ -349,92 +304,57 @@ Resultado executar_sjf(Processo *processos, int quantidade) {
 
         /*
             O processo atual executa durante um segundo.
-
             Guardamos seu ID no diagrama.
         */
         resultado.execucao[resultado.tamanho_execucao] = copia[processo_atual].id;
         resultado.tamanho_execucao++;
 
 
-        /*
-            Um segundo de processamento foi consumido.
-        */
+        // Um segundo de processamento foi consumido.
         copia[processo_atual].restante--;
 
-
-        /*
-            Avançamos o relógio.
-        */
         tempo++;
 
 
-        /*
-            Verificamos se o processo terminou.
-        */
+        // Verificamos se o processo terminou.
         if (copia[processo_atual].restante == 0) {
 
-            /*
-                O processo terminou no instante atual.
-            */
+            // O processo terminou no instante atual.
             copia[processo_atual].fim = tempo;
 
 
-            /*
-                Atualizamos a quantidade de processos
-                finalizados.
-            */
+            // Atualizamos a quantidade de processos finalizados.
             finalizados++;
 
 
-            /*
-                Guardamos qual processo estava utilizando
-                a CPU antes dela ficar livre.
-            */
+            // Guardamos qual processo estava utilizando a CPU antes dela ficar livre.
             processo_anterior = processo_atual;
 
 
-            /*
-                Como o processo terminou, a CPU ficará livre.
-
-                Na próxima iteração será escolhido outro processo.
-            */
+            // Como o processo terminou, a CPU ficará livre. Na próxima iteração será escolhido outro processo.
             processo_atual = -1;
         }
     }
 
 
-    /*
-        Variáveis utilizadas para calcular as métricas.
-    */
     int soma_turnaround = 0;
     int soma_espera = 0;
     int soma_resposta = 0;
 
 
-    /*
-        Calculamos as métricas de cada processo.
-    */
+    // Calculamos as métricas de cada processo.
     for (int i = 0; i < quantidade; i++) {
 
-        /*
-            Turnaround:
-
-            tempo de término - tempo de criação.
-        */
+        // Turnaround: tempo de término - tempo de criação.
         int turnaround = copia[i].fim - copia[i].criacao;
 
 
-        /*
-            Tempo de espera:
-
-            turnaround - duração.
-        */
+        // Tempo de espera: turnaround - duração.
         int espera = turnaround - copia[i].duracao;
 
 
         /*
             Tempo de resposta:
-
             primeiro instante em que recebeu CPU
             - instante de criação.
         */

@@ -9,19 +9,14 @@ static int desempate(
     int candidato
 ) {
 
-    /*
-        Menor tempo restante.
-     */
+    // Menor tempo restante.
     if (processos[candidato].restante <
         processos[escolhido].restante) {
 
         return candidato;
     }
 
-    /*
-        Se também houver empate no tempo restante,
-        escolha aleatória.
-     */
+    // Se também houver empate no tempo restante, escolha aleatória.
     if (processos[candidato].restante ==
         processos[escolhido].restante) {
 
@@ -40,32 +35,23 @@ static int escolher_processo(Processo *processos, int quantidade, int tempo) {
 
     for (int i = 0; i < quantidade; i++) {
 
-        /*
-            Processo já terminou.
-         */
+        // Processo já terminou.
         if (processos[i].restante <= 0) {
             continue;
         }
 
-        /*
-            Processo ainda não chegou.
-         */
+        // Processo ainda não chegou.
         if (processos[i].criacao > tempo) {
             continue;
         }
 
-        /*
-            Primeiro processo disponível.
-         */
+        // Primeiro processo disponível.
         if (escolhido == -1) {
             escolhido = i;
             continue;
         }
 
-        /*
-            Critério principal do FCFS:
-            processo que chegou primeiro.
-         */
+        // Critério principal do FCFS: processo que chegou primeiro.
         if (
             processos[i].criacao < processos[escolhido].criacao
         ) {
@@ -75,7 +61,6 @@ static int escolher_processo(Processo *processos, int quantidade, int tempo) {
         /*
             Se chegaram no mesmo instante,
             aplicamos os critérios de desempate
-            definidos pelo trabalho.
          */
         else if (
             processos[i].criacao ==
@@ -97,14 +82,12 @@ static int escolher_processo(Processo *processos, int quantidade, int tempo) {
 
 /*
     Executa o algoritmo FCFS.
- 
     Recebe:
-      processos  -> vetor com os processos lidos da entrada
-      quantidade -> quantidade de processos
- 
+        processos  -> vetor com os processos lidos da entrada
+        quantidade -> quantidade de processos
     Retorna:
-      Resultado contendo as métricas da execução,
-      número de trocas de contexto e o diagrama.
+        Resultado contendo as métricas da execução,
+        número de trocas de contexto e o diagrama.
  */
 Resultado executar_fcfs(Processo *processos, int quantidade) {
 
@@ -164,17 +147,10 @@ Resultado executar_fcfs(Processo *processos, int quantidade) {
     }
 
 
-    /*
-        "tempo" representa o relógio da simulação.
-        Começamos no instante 0.
-    */
     int tempo = 0;
 
 
-    /*
-        Quantidade de processos que já terminaram.
-        Quando todos terminarem, a simulação acaba.
-    */
+    // Quantidade de processos que já terminaram. Quando todos terminarem, a simulação acaba.
     int finalizados = 0;
 
 
@@ -199,10 +175,7 @@ Resultado executar_fcfs(Processo *processos, int quantidade) {
     while (finalizados < quantidade) {
 
 
-        /*
-            Se não existe processo executando atualmente,
-            precisamos escolher um.
-        */
+        // Se não existe processo executando atualmente, precisamos escolher um.
         if (processo_atual == -1) {
 
             processo_atual = escolher_processo(copia, quantidade, tempo);
@@ -253,17 +226,11 @@ Resultado executar_fcfs(Processo *processos, int quantidade) {
         }
 
 
-        /*
-            Executamos o processo atual durante 1 segundo.
-            Guardamos o ID do processo no diagrama.
-        */
+        // Executamos o processo atual durante 1 segundo. Guardamos o ID do processo no diagrama.
         resultado.execucao[resultado.tamanho_execucao] = copia[processo_atual].id;
         resultado.tamanho_execucao++;
 
-        /*
-            Como passou 1 segundo de execução, diminuímos
-            o tempo restante do processo.
-        */
+        // Como passou 1 segundo de execução, diminuímos o tempo restante do processo.
         copia[processo_atual].restante--;
 
 
@@ -271,10 +238,7 @@ Resultado executar_fcfs(Processo *processos, int quantidade) {
         tempo++;
 
 
-        /*
-         * Se o tempo restante chegou a 0,
-         * o processo terminou.
-         */
+        // Se o tempo restante chegou a 0, o processo terminou.
         if (copia[processo_atual].restante == 0) {
 
             /*

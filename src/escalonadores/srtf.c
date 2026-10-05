@@ -325,9 +325,6 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
     int soma_resposta = 0;
 
 
-    /*
-        Calculamos as métricas de cada processo.
-    */
     for (int i = 0; i < quantidade; i++) {
 
         // Turnaround: tempo de término - tempo de criação.
@@ -346,9 +343,6 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
     }
 
 
-    /*
-        Calculamos as médias.
-    */
     resultado.tempo_medio_turnaround = (double)soma_turnaround / quantidade;
     resultado.tempo_medio_espera = (double)soma_espera / quantidade;
     resultado.tempo_medio_resposta = (double)soma_resposta / quantidade;

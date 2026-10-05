@@ -20,11 +20,8 @@ static int desempate(
 ) {
 
     /*
-        Primeiro critério:
-
-        Se um dos processos empatados já está utilizando
+        Primeiro critério: Se um dos processos empatados já está utilizando
         a CPU, ele obrigatoriamente continua executando.
-
         Isso evita uma troca de contexto desnecessária.
     */
     if (processo_atual == escolhido) {
@@ -37,9 +34,7 @@ static int desempate(
 
 
     /*
-        Segundo critério:
-
-        Escolhemos o processo com menor tempo restante.
+        Segundo critério: escolhemos o processo com menor tempo restante.
     */
     if (processos[candidato].restante <
         processos[escolhido].restante) {
@@ -49,9 +44,7 @@ static int desempate(
 
 
     /*
-        Terceiro critério:
-
-        Se os tempos restantes também forem iguais,
+        Terceiro critério: Se os tempos restantes também forem iguais,
         fazemos uma escolha aleatória.
     */
     if (processos[candidato].restante ==
@@ -69,7 +62,6 @@ static int desempate(
 
 /*
     Escolhe o processo que deverá utilizar a CPU.
-
     No SRTF, o processo com menor tempo restante
     possui preferência.
 
@@ -91,41 +83,29 @@ static int escolher_processo(
     int escolhido = -1;
 
 
-    /*
-        Percorremos todos os processos.
-    */
+    // Percorremos todos os processos.
     for (int i = 0; i < quantidade; i++) {
 
-        /*
-            Processo já terminou.
-        */
+        // Processo já terminou.
         if (processos[i].restante <= 0) {
             continue;
         }
 
 
-        /*
-            Processo ainda não chegou.
-        */
+        // Processo ainda não chegou.
         if (processos[i].criacao > tempo) {
             continue;
         }
 
 
-        /*
-            Primeiro processo disponível.
-        */
+        // Primeiro processo disponível.
         if (escolhido == -1) {
             escolhido = i;
             continue;
         }
 
 
-        /*
-            Critério principal do SRTF:
-
-            menor tempo restante.
-        */
+        // Critério de menor tempo restante.
         if (processos[i].restante <
             processos[escolhido].restante) {
 
@@ -133,10 +113,7 @@ static int escolher_processo(
         }
 
 
-        /*
-            Se os tempos restantes forem iguais,
-            utilizamos os critérios de desempate.
-        */
+        // Se os tempos restantes forem iguais, utilizamos os critérios de desempate.
         else if (
             processos[i].restante ==
             processos[escolhido].restante
@@ -176,9 +153,6 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
     Resultado resultado;
 
 
-    /*
-        Inicializamos o resultado.
-    */
     resultado.tempo_medio_turnaround = 0;
     resultado.tempo_medio_espera = 0;
     resultado.tempo_medio_resposta = 0;
@@ -189,9 +163,7 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
     resultado.tamanho_execucao = 0;
 
 
-    /*
-        Não há nada para executar se não existem processos.
-    */
+    // Não há nada para executar se não existem processos.
     if (quantidade <= 0) {
         return resultado;
     }
@@ -199,9 +171,7 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
 
     /*
         Criamos uma cópia dos processos.
-
-        Assim podemos alterar restante, inicio e fim
-        sem modificar os processos originais.
+        Assim podemos alterar restante, inicio e fim sem modificar os processos originais.
     */
     Processo *copia = malloc(quantidade * sizeof(Processo));
 
@@ -210,17 +180,13 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
     }
 
 
-    /*
-        Copiamos os processos.
-    */
+    // Copiamos os processos.
     for (int i = 0; i < quantidade; i++) {
         copia[i] = processos[i];
     }
 
 
-    /*
-        Calculamos uma capacidade inicial para o diagrama.
-    */
+    // Calculamos uma capacidade inicial para o diagrama.
     int tempo_total = 0;
 
     for (int i = 0; i < quantidade; i++) {
@@ -235,9 +201,7 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
     tempo_total += 1;
 
 
-    /*
-        Alocamos memória para o diagrama.
-    */
+    // Alocamos memória para o diagrama.
     resultado.execucao = malloc(tempo_total * sizeof(int));
 
     if (resultado.execucao == NULL) {
@@ -246,44 +210,27 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
     }
 
 
-    /*
-        Relógio da simulação.
-    */
     int tempo = 0;
 
 
-    /*
-        Quantidade de processos finalizados.
-    */
+    //Quantidade de processos finalizados.
     int finalizados = 0;
 
 
-    /*
-        Processo atualmente utilizando a CPU.
-
-        -1 significa que a CPU está livre.
-    */
+    // Processo atualmente utilizando a CPU. -1 significa que a CPU está livre.
     int processo_atual = -1;
 
 
     /*
         Guarda o último processo que realmente utilizou
-        a CPU.
-
-        É usado para contabilizar trocas de contexto.
+        a CPU. É usado para contabilizar trocas de contexto.
     */
     int ultimo_processo = -1;
 
-
-    /*
-        A simulação continua até todos os processos
-        terminarem.
-    */
+    // A simulação continua até todos os processos terminarem.
     while (finalizados < quantidade) {
 
-        /*
-            O SRTF reavalia a escolha a cada segundo.
-        */
+        // O SRTF reavalia a escolha a cada segundo.
         int novo_processo = escolher_processo(
             copia,
             quantidade,
@@ -292,11 +239,7 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
         );
 
 
-        /*
-            Nenhum processo está disponível.
-
-            A CPU fica ociosa.
-        */
+        // Nenhum processo está disponível. A CPU fica ociosa.
         if (novo_processo == -1) {
 
             resultado.execucao[
@@ -336,108 +279,64 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
             resultado.trocas_contexto++;
         }
 
-
-        /*
-            Atualizamos o processo atual e o ultimo executado.
-        */
+        // Atualizamos o processo atual e o ultimo executado.
         processo_atual = novo_processo;
         ultimo_processo = novo_processo;
 
-
-        /*
-            Se é a primeira vez que esse processo recebe
-            a CPU, registramos seu instante de início.
-        */
+        // Se é a primeira vez que esse processo recebe a CPU, registramos seu instante de início.
         if (copia[processo_atual].inicio == -1) {
             copia[processo_atual].inicio = tempo;
         }
 
 
-        /*
-            Executamos o processo durante um segundo.
-        */
+        // Executamos o processo durante um segundo.
         resultado.execucao[resultado.tamanho_execucao] = copia[processo_atual].id;
         resultado.tamanho_execucao++;
 
 
-        /*
-            Consumimos um segundo do tempo restante.
-        */
+        // Consumimos um segundo do tempo restante.
         copia[processo_atual].restante--;
 
 
-        /*
-            Avançamos o relógio.
-        */
         tempo++;
 
 
-        /*
-            Verificamos se o processo terminou.
-        */
+        // Verificamos se o processo terminou.
         if (copia[processo_atual].restante == 0) {
 
-            /*
-                Registramos o instante de término.
-            */
+            // Registramos o instante de término.
             copia[processo_atual].fim = tempo;
 
 
-            /*
-                Aumentamos a quantidade de processos
-                finalizados.
-            */
+            // Aumentamos a quantidade de processos finalizados.
             finalizados++;
 
 
-            /*
-                Guardamos o processo que acabou de terminar.
-            */
+            // Guardamos o processo que acabou de terminar.
             ultimo_processo = processo_atual;
 
 
-            /*
-                A CPU fica livre.
-                Na próxima iteração o SRTF escolherá
-                outro processo.
-            */
+            // A CPU fica livre. Na próxima iteração o SRTF escolherá outro processo.
             processo_atual = -1;
         }
     }
 
 
-    /*
-        Variáveis para calcular as métricas.
-    */
     int soma_turnaround = 0;
     int soma_espera = 0;
     int soma_resposta = 0;
 
 
-    /*
-        Calculamos as métricas de cada processo.
-    */
     for (int i = 0; i < quantidade; i++) {
 
-        /*
-            Turnaround:
-            tempo de término - tempo de criação.
-        */
+        // Turnaround: tempo de término - tempo de criação.
         int turnaround = copia[i].fim - copia[i].criacao;
 
-
-        /*
-            Tempo de espera:
-            turnaround - duração.
-        */
+        // Tempo de espera: turnaround - duração.
         int espera = turnaround - copia[i].duracao;
 
 
-        /*
-            Tempo de resposta:
-            primeiro instante em que recebeu CPU
-            - instante de criação.
-        */
+        // Tempo de resposta: primeiro instante em que recebeu CPU - instante de criação.
         int resposta = copia[i].inicio - copia[i].criacao;
 
 
@@ -447,9 +346,6 @@ Resultado executar_srtf(Processo *processos, int quantidade) {
     }
 
 
-    /*
-        Calculamos as médias.
-    */
     resultado.tempo_medio_turnaround = (double)soma_turnaround / quantidade;
     resultado.tempo_medio_espera = (double)soma_espera / quantidade;
     resultado.tempo_medio_resposta = (double)soma_resposta / quantidade;
